@@ -1,0 +1,34 @@
+{
+  "analisys": {
+    "alert_id": "alert_1706798417002",
+    "timestamp": "2025-10-01T22:40:17.002-03:00",
+    "sensores": [
+      {
+        "sensor_id": "IAQ_6227821",
+        "poluentes": [
+          {
+            "poluente": "pm25",
+            "risk_level": "moderate",
+            "affected_diseases": {
+              "disease": [
+                "asma",
+                "bronquite",
+                "irritação respiratória"
+              ]
+            }
+          },
+          {
+            "poluente": "pm4",
+            "risk_level": "high",
+            "affected_diseases": {
+              "disease": [
+                "irritação respiratória",
+                "inflamação sistêmica leve"
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

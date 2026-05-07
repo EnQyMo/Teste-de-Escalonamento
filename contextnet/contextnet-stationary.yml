@@ -1,0 +1,54 @@
+services:
+  processing-node:
+    build:  ./processing-node
+    container_name: processing-node
+    depends_on:
+      - group-definer
+    environment:
+      app.consumer.topics: "AppModel"
+      app.consumer.auto.offset.reset: "latest"
+      app.consumer.bootstrap.servers: "kafka1:6110"    # aqui
+      app.consumer.group.id: "gw-consumer"
+      app.producer.bootstrap.servers: "kafka1:6110"    # aqui
+      app.producer.retries: "3"
+      app.producer.enable.idempotence: "true"
+      app.producer.linger.ms: "1"
+      app.producer.acks: "all"
+    volumes:
+      - ./processing-node/data/sensors.json:/app/data/sensors.json
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    networks:
+      - contextnet
+
+  group-definer:
+    build:  ./group-definer
+    container_name: group-definer
+    environment:
+      gd.one.consumer.topics: "GroupReportTopic"
+      gd.one.consumer.auto.offset.reset: "latest"
+      gd.one.consumer.bootstrap.servers: "kafka1:6110"   # aqui
+      gd.one.consumer.group.id: "gw-gd"
+      gd.one.producer.bootstrap.servers: "kafka1:6110"   # aqui
+      gd.one.producer.retries: "3"
+      gd.one.producer.enable.idempotence: "true"
+      gd.one.producer.linger.ms: "1"
+    volumes:
+      - ./group-definer/data/beacons.json:/app/data/beacons.json
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    networks:
+      - contextnet
+
+networks:
+  contextnet:
+    external: true
+    name: contextnet-net

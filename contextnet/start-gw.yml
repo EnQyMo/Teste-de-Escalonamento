@@ -1,0 +1,64 @@
+services:
+  zoo1:
+    image: zookeeper:3.4.9
+    hostname: zoo1
+    container_name: zoo1
+    ports:
+      - "6000:2181"    # aqui
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_PORT: 6000   # aqui
+      ZOO_SERVERS: server.1=zoo1:2888:3888
+    volumes:
+      - ./zk-single-kafka-single/zoo1/data:/data
+      - ./zk-single-kafka-single/zoo1/datalog:/datalog
+    networks:
+      - contextnet
+
+  kafka1:
+    image: confluentinc/cp-kafka:5.3.0
+    hostname: kafka1
+    container_name: kafka1
+    ports:
+      - "6010:9092"    # aqui
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka1:6110,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:6010 # aqui
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "zoo1:6000"   # aqui
+      KAFKA_BROKER_ID: 1
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    volumes:
+      - ./zk-single-kafka-single/kafka1/data:/var/lib/kafka/data
+    depends_on:
+      - zoo1
+    networks:
+      - contextnet
+
+  gateway:
+    image: registry.gitlab.com/lac-puc/context-net-kafka-core/gwlocal6:latest
+    container_name: gateway
+    ports:
+      - "6200:5500/udp"    # aqui
+    environment:
+      gw.port: "5500"
+      gw.consumer.topics: GroupAdvertisement,PrivateMessageTopic,GroupMessageTopic,UniCast,PingConfig
+      gw.consumer.auto.offset.reset: "latest"
+      gw.consumer.bootstrap.servers: "kafka1:6110"
+      gw.consumer.group.id: "gw-gateway"
+      gw.producer.bootstrap.servers: "kafka1:6110"
+      gw.producer.retries: "3"
+      gw.producer.enable.idempotence: "true"
+      gw.producer.linger.ms: "1"
+      gw.producer.acks: "all"
+      gw.poolsize: 1000
+    depends_on:
+      - kafka1
+    networks:
+      - contextnet
+
+networks:
+  # Shared network used by all stacks (infra + apps)
+  contextnet:
+    name: contextnet-net

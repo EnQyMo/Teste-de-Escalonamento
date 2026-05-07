@@ -1,0 +1,18 @@
+[
+    {
+        "beacon_uuid": "4a215260-da59-42f6-b273-38fcde738f98",
+        "beacon_group": 1001
+    },
+    {
+        "beacon_uuid": "188c87bf-977f-4154-8682-958ec3335bdc",
+        "beacon_group": 1001
+    },
+    {
+        "beacon_uuid": "ea02d05b-179b-46a9-9137-103b06028fb7",
+        "beacon_group": 1002
+    },
+    {
+        "beacon_uuid": "945d6c6f-959f-4e35-ad73-6ec2ff14ecf9",
+        "beacon_group": 1003
+    }
+]
