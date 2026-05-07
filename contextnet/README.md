@@ -5,6 +5,7 @@ Projeto que usa ContextNet para um sistema de monitoramento do ar.
 ## Como executar
 
 ### Pré-requisitos
+
 - Docker instalado
 - Java 17 ou superior
 - Maven (para compilar)
