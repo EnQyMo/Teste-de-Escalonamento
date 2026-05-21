@@ -1,0 +1,6 @@
+target/
+**/target/
+zk-single-kafka-single/
+
+.DS_Store
+.vscode/
