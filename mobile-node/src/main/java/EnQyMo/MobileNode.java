@@ -33,10 +33,14 @@ public class MobileNode extends CKMobileNode {
     private static final String OPTION_ALERT = "A";
     private static final String OPTION_RECORD = "T";
     private static final String OPTION_EXIT = "Z";
+    private static final String OPTION_STRESS_TEST = "S";
 
     // The variable cannot be local because it is being used in a lambda function
     // Control the infinite loop until it ends
     private boolean fim = false;
+
+    private static final int DEFAULT_STRESS_ALERT_ATTEMPTS = 10; // Number of alerts to send during stress test
+    private static final int DEFAULT_STRESS_ALERT_MESSAGE_INTERVAL = 5000; // 5 seconds
 
     /**
      * main
@@ -70,13 +74,15 @@ public class MobileNode extends CKMobileNode {
         optionsMap.put(OPTION_ALERT, this::sendAlertToPN);
         optionsMap.put(OPTION_RECORD, this::requestRecord);
         optionsMap.put(OPTION_GROUPCAST, this::sendGroupcastMessage);
+        optionsMap.put(OPTION_STRESS_TEST, scanner -> this.sendAlertToPN(scanner,DEFAULT_STRESS_ALERT_ATTEMPTS,DEFAULT_STRESS_ALERT_MESSAGE_INTERVAL));
         optionsMap.put(OPTION_EXIT, scanner -> fim = true);
 
         // Main loop that continues until the 'fim' variable is true
         while (!fim) {
 
             // Requests the user's option
-            System.out.print("(G) Groupcast | (P) Message to PN | (A) Send Alert to PN | (T) Request Record | (Z) to finish)? ");
+            System.out.print("(G) Groupcast | (P) Message to PN | (A) Send Alert to PN |\n" +
+                             "(T) Request Record | (S) Send Stress Test to PN | (Z) to finish)? "); 
             String linha = keyboard.nextLine().trim().toUpperCase();
             System.out.printf("Your option was %s. ", linha);
 
@@ -141,11 +147,12 @@ public class MobileNode extends CKMobileNode {
             if ("PrivateMessageTopic".equals(swp.getTopic()) || "UniCast".equals(swp.getTopic())) {
                 String content = new String(swp.getMessage(), StandardCharsets.UTF_8);
                 if (content.startsWith("[STATS]")) {
-                    System.out.println("Received test stats from PN. Writing to stress_test_results.csv...");
+                    String fileName = "stress_test_results.csv";
+                    System.out.println("Received test stats from PN. Writing to " + fileName + "...");
                     String csvContent = content.substring(7);
-                    try (java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.FileWriter("stress_test_results.csv"))) {
+                    try (java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.FileWriter(fileName))) {
                         pw.print(csvContent);
-                        System.out.println("Results successfully written to stress_test_results.csv!");
+                        System.out.println("Results successfully written to " + fileName + "!");
                     } catch (Exception e) {
                         logger.error("Failed to write stats to file", e);
                     }
@@ -235,6 +242,64 @@ public class MobileNode extends CKMobileNode {
         System.out.println("Sending alert analysis to Processing Node...");
         this.sendMessageToPN(alertJson, "AppModel");
         System.out.println("Alert sent successfully!");
+    }
+
+    /**
+     * Sends alert analysis JSON to the Processing Node multiple times with a 5 seconds interval
+     * @param keyboard
+     * @param numOfAlerts number of alerts to send
+     * @param messageInterval interval between alerts in milliseconds
+     */
+    private void sendAlertToPN(Scanner keyboard, int numOfAlerts, int messageInterval) {
+        String alertJson = "{\n" +
+            "  \"analisys\": {\n" +
+            "    \"alert_id\": \"alert_1706798417002\",\n" +
+            "    \"timestamp\": \"2025-10-01T22:40:17.002-03:00\",\n" +
+            "    \"sensores\": [\n" +
+            "      {\n" +
+            "        \"sensor_id\": \"IAQ_6227821\",\n" +
+            "        \"poluentes\": [\n" +
+            "          {\n" +
+            "            \"poluente\": \"pm25\",\n" +
+            "            \"risk_level\": \"moderate\",\n" +
+            "            \"affected_diseases\": {\n" +
+            "              \"disease\": [\n" +
+            "                \"asma\",\n" +
+            "                \"bronquite\",\n" +
+            "                \"irritação respiratória\"\n" +
+            "              ]\n" +
+            "            }\n" +
+            "          },\n" +
+            "          {\n" +
+            "            \"poluente\": \"pm4\",\n" +
+            "            \"risk_level\": \"high\",\n" +
+            "            \"affected_diseases\": {\n" +
+            "              \"disease\": [\n" +
+            "                \"irritação respiratória\",\n" +
+            "                \"inflamação sistêmica leve\"\n" +
+            "              ]\n" +
+            "            }\n" +
+            "          }\n" +
+            "        ]\n" +
+            "      }\n" +
+            "    ]\n" +
+            "  }\n" +
+            "}";
+
+        System.out.println("Starting to send alert analysis to Processing Node...");
+        for (int i = 0; i < numOfAlerts; i++) {
+            this.sendMessageToPN(alertJson, "AppModel");
+            System.out.println("Alert " + i + " sent successfully!");
+            if (i < numOfAlerts - 1) {
+                try {
+                    Thread.sleep(messageInterval);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }
+        System.out.println("All alerts sent.");
     }
 
     /**
